@@ -1,0 +1,13 @@
+// Déclaration et utilisation d'une structure simple
+struct Point {
+    int x;
+    int y;
+};
+
+struct Point p;
+
+int main(void) {
+    p.x = 10;
+    p.y = 20;
+    return 0;
+}

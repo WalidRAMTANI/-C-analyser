@@ -1,0 +1,20 @@
+// Structures imbriquées
+struct Engine {
+    int power;
+    char type;
+};
+
+struct Aircraft {
+    int height;
+    int width;
+    struct Engine motor;
+};
+
+struct Aircraft plane;
+
+int main(void) {
+    plane.height = 100;
+    plane.motor.power = 5000;
+    plane.motor.type = 'J';
+    return 0;
+}

@@ -1,0 +1,7 @@
+// ERREUR: Point-virgule manquant
+int main(void) {
+    int x, y
+    x = 10;
+    y = 20;
+    return 0;
+}

@@ -1,0 +1,19 @@
+// Expressions arithmétiques et logiques complexes
+int calculate(int a, int b) {
+    int result;
+    result = (a + b) * (a - b) / 2 % 10;
+    return result;
+}
+
+int main(void) {
+    int x, y, z;
+    x = 10;
+    y = 5;
+    z = calculate(x, y);
+    
+    if (x > y && z < 100 || x == 10) {
+        x = x + 1;
+    }
+    
+    return 0;
+}

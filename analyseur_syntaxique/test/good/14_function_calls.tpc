@@ -1,0 +1,16 @@
+// Appels de fonctions avec arguments
+int add(int a, int b) {
+    return a + b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}
+
+int main(void) {
+    int x, y, z;
+    x = add(5, 10);
+    y = multiply(3, 4);
+    z = add(x, y);
+    return 0;
+}

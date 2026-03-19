@@ -1,0 +1,4 @@
+// Programme minimal valide
+int main(void) {
+    return 0;
+}

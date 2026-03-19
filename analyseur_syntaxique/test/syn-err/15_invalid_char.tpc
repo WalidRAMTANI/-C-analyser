@@ -1,0 +1,6 @@
+// ERREUR: Caractère littéral non fermé
+int main(void) {
+    char c;
+    c = 'ab';
+    return 0;
+}

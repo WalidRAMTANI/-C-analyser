@@ -1,0 +1,6 @@
+// ERREUR: Accolade fermante manquante
+int main(void) {
+    int x;
+    x = 10;
+    return 0;
+// Accolade fermante manquante

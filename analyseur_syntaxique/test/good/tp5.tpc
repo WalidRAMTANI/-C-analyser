@@ -1,0 +1,6 @@
+// Programme minimal valide
+int main(void) {
+    int x;
+    x = 5 - 10;
+    return 0;
+}

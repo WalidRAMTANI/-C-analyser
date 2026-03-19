@@ -1,0 +1,9 @@
+// ERREUR: Parenthèse fermante manquante
+int main(void) {
+    int x;
+    x = 10;
+    if (x > 5 {
+        x = 0;
+    }
+    return 0;
+}

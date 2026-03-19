@@ -1,0 +1,9 @@
+// ERREUR: Structure globale déclarée après une fonction
+int main(void) {
+    return 0;
+}
+
+struct Point {
+    int x;
+    int y;
+};

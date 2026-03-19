@@ -1,0 +1,12 @@
+// ERREUR: Structure locale déclarée après une instruction
+int main(void) {
+    int x;
+    x = 10;
+    
+    struct Point {
+        int x;
+        int y;
+    };
+    
+    return 0;
+}

@@ -1,0 +1,11 @@
+// Déclaration de structure locale
+int main(void) {
+    struct LocalPoint {
+        int x;
+        int y;
+    };
+    struct LocalPoint p;
+    p.x = 5;
+    p.y = 10;
+    return 0;
+}

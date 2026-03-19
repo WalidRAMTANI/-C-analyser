@@ -1,0 +1,11 @@
+// ERREUR: Déclaration de structure imbriquée interdite
+struct Aircraft {
+    int height;
+    struct Engine {
+        int power;
+    };
+};
+
+int main(void) {
+    return 0;
+}

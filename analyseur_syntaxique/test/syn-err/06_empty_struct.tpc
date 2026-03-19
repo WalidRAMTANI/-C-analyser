@@ -1,0 +1,7 @@
+// ERREUR: Structure sans champs (interdit)
+struct Empty {
+};
+
+int main(void) {
+    return 0;
+}

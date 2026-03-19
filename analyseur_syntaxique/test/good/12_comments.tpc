@@ -1,0 +1,14 @@
+/* Programme avec différents types de commentaires */
+
+// Commentaire sur une ligne
+int x; /* variable globale */
+
+/* Commentaire
+   sur plusieurs
+   lignes */
+   
+int main(void) {
+    // Instruction simple
+    x = 42; /* affectation */
+    return 0; // fin
+}

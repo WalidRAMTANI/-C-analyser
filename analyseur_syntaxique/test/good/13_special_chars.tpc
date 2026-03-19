@@ -1,0 +1,9 @@
+// Caractères littéraux spéciaux
+int main(void) {
+    char newline, tab, backslash, quote;
+    newline = '\n';
+    tab = '\t';
+    backslash = '\\';
+    quote = '\'';
+    return 0;
+}

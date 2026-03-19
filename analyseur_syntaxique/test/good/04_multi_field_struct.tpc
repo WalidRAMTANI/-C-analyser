@@ -1,0 +1,14 @@
+// Structure avec plusieurs champs de types différents
+struct Person {
+    int age;
+    char initial;
+    int height;
+    int weight;
+};
+
+int main(void) {
+    struct Person john;
+    john.age = 30;
+    john.initial = 'J';
+    return 0;
+}

@@ -1,0 +1,9 @@
+// ERREUR: Point-virgule manquant dans la déclaration de structure
+struct Point {
+    int x
+    int y;
+};
+
+int main(void) {
+    return 0;
+}

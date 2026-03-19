@@ -1,0 +1,18 @@
+// Fonction retournant une structure
+struct Point {
+    int x;
+    int y;
+};
+
+struct Point create_point(int a, int b) {
+    struct Point p;
+    p.x = a;
+    p.y = b;
+    return p;
+}
+
+int main(void) {
+    struct Point p1;
+    p1 = create_point(10, 20);
+    return 0;
+}

@@ -1,0 +1,10 @@
+// Variables globales de types simples
+int x, y, z;
+char c, d;
+
+int main(void) {
+    x = 10;
+    y = 20;
+    c = 'A';
+    return 0;
+}

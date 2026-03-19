@@ -1,0 +1,7 @@
+struct S {
+    int x;
+};
+
+void g(void) {
+    a().c = 10;
+}

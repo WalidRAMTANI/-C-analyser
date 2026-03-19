@@ -1,0 +1,9 @@
+// ERREUR: typedef interdit
+typedef struct Point {
+    int x;
+    int y;
+} Point;
+
+int main(void) {
+    return 0;
+}

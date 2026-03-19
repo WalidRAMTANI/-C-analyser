@@ -1,0 +1,6 @@
+// ERREUR: Déclaration forward interdite
+struct Point;
+
+int main(void) {
+    return 0;
+}
