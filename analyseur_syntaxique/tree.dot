@@ -1,0 +1,48 @@
+digraph AST {
+  node [shape=box, fontname="Courier"];
+  edge [fontname="Courier"];
+
+  node_0x64b95533a860 [label="Prog"];
+  node_0x64b95533a860 -> node_0x64b9553352a0;
+  node_0x64b9553352a0 [label="DeclVars"];
+  node_0x64b95533a860 -> node_0x64b95533a830;
+  node_0x64b95533a830 [label="DeclFoncts"];
+  node_0x64b95533a830 -> node_0x64b95533a800;
+  node_0x64b95533a800 [label="DeclFonct"];
+  node_0x64b95533a800 -> node_0x64b95533a420;
+  node_0x64b95533a420 [label="EnTeteFonct"];
+  node_0x64b95533a420 -> node_0x64b95533a450;
+  node_0x64b95533a450 [label="TYPE\n(int)"];
+  node_0x64b95533a420 -> node_0x64b95533a480;
+  node_0x64b95533a480 [label="IDENT\n(main)"];
+  node_0x64b95533a420 -> node_0x64b95533a3c0;
+  node_0x64b95533a3c0 [label="Parametres"];
+  node_0x64b95533a3c0 -> node_0x64b95533a3f0;
+  node_0x64b95533a3f0 [label="VOID\n(void)"];
+  node_0x64b95533a800 -> node_0x64b95533a7d0;
+  node_0x64b95533a7d0 [label="Corps"];
+  node_0x64b95533a7d0 -> node_0x64b95533a4b0;
+  node_0x64b95533a4b0 [label="DeclVars"];
+  node_0x64b95533a4b0 -> node_0x64b95533a550;
+  node_0x64b95533a550 [label="VAR_DECL"];
+  node_0x64b95533a550 -> node_0x64b95533a580;
+  node_0x64b95533a580 [label="TYPE\n(int)"];
+  node_0x64b95533a550 -> node_0x64b95533a520;
+  node_0x64b95533a520 [label="IDENT\n(x)"];
+  node_0x64b95533a7d0 -> node_0x64b95533a5d0;
+  node_0x64b95533a5d0 [label="SuiteInstr"];
+  node_0x64b95533a5d0 -> node_0x64b95533a720;
+  node_0x64b95533a720 [label="ASSIGN"];
+  node_0x64b95533a720 -> node_0x64b95533a600;
+  node_0x64b95533a600 [label="IDENT\n(x)"];
+  node_0x64b95533a720 -> node_0x64b95533a6f0;
+  node_0x64b95533a6f0 [label="ADDSUB\n(-)"];
+  node_0x64b95533a6f0 -> node_0x64b95533a650;
+  node_0x64b95533a650 [label="NUM\n(5)"];
+  node_0x64b95533a6f0 -> node_0x64b95533a6c0;
+  node_0x64b95533a6c0 [label="NUM\n(10)"];
+  node_0x64b95533a5d0 -> node_0x64b95533a7a0;
+  node_0x64b95533a7a0 [label="RETURN"];
+  node_0x64b95533a7a0 -> node_0x64b95533a770;
+  node_0x64b95533a770 [label="NUM\n(0)"];
+}

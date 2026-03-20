@@ -1,14 +1,14 @@
-/* A Bison parser, made by GNU Bison 2.3.  */
+/* A Bison parser, made by GNU Bison 3.8.2.  */
 
-/* Skeleton interface for Bison's Yacc-like parsers in C
+/* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
+   Inc.
 
-   This program is free software; you can redistribute it and/or modify
+   This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,9 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -33,67 +31,72 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Tokens.  */
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
+
+#ifndef YY_YY_SRC_TPCAS_TAB_H_INCLUDED
+# define YY_YY_SRC_TPCAS_TAB_H_INCLUDED
+/* Debug traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
+
+/* Token kinds.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     TYPE = 258,
-     IDENT = 259,
-     VOID = 260,
-     NUM = 261,
-     CHARACTER = 262,
-     STRUCT = 263,
-     WHILE = 264,
-     IF = 265,
-     ELSE = 266,
-     RETURN = 267,
-     ORDER = 268,
-     ADDSUB = 269,
-     EQ = 270,
-     DIVSTAR = 271,
-     AND = 272,
-     OR = 273,
-     DOT = 274
-   };
+  enum yytokentype
+  {
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    TYPE = 258,                    /* TYPE  */
+    IDENT = 259,                   /* IDENT  */
+    VOID = 260,                    /* VOID  */
+    NUM = 261,                     /* NUM  */
+    CHARACTER = 262,               /* CHARACTER  */
+    STRUCT = 263,                  /* STRUCT  */
+    WHILE = 264,                   /* WHILE  */
+    IF = 265,                      /* IF  */
+    ELSE = 266,                    /* ELSE  */
+    RETURN = 267,                  /* RETURN  */
+    ORDER = 268,                   /* ORDER  */
+    ADDSUB = 269,                  /* ADDSUB  */
+    EQ = 270,                      /* EQ  */
+    DIVSTAR = 271,                 /* DIVSTAR  */
+    AND = 272,                     /* AND  */
+    OR = 273,                      /* OR  */
+    DOT = 274                      /* DOT  */
+  };
+  typedef enum yytokentype yytoken_kind_t;
 #endif
-/* Tokens.  */
-#define TYPE 258
-#define IDENT 259
-#define VOID 260
-#define NUM 261
-#define CHARACTER 262
-#define STRUCT 263
-#define WHILE 264
-#define IF 265
-#define ELSE 266
-#define RETURN 267
-#define ORDER 268
-#define ADDSUB 269
-#define EQ 270
-#define DIVSTAR 271
-#define AND 272
-#define OR 273
-#define DOT 274
 
-
-
-
+/* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE
-#line 16 "src/tpcas.y"
+union YYSTYPE
 {
+#line 16 "src/tpcas.y"
+
     Node *node;
     char *text;
-}
-/* Line 1529 of yacc.c.  */
-#line 92 "src/tpcas.tab.h"
-	YYSTYPE;
-# define yystype YYSTYPE /* obsolescent; will be withdrawn */
-# define YYSTYPE_IS_DECLARED 1
+
+#line 88 "src/tpcas.tab.h"
+
+};
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
+# define YYSTYPE_IS_DECLARED 1
 #endif
+
 
 extern YYSTYPE yylval;
 
+
+int yyparse (void);
+
+
+#endif /* !YY_YY_SRC_TPCAS_TAB_H_INCLUDED  */

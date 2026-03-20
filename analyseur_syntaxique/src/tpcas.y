@@ -331,7 +331,7 @@ int main(int argc, char **argv) {
     // ----- - tp5 partie 2 -----
     parcours_instruction(ptr, globalTable, fp);
     fprintf(fp, "mov rdi, format\n");
-    fprintf(fp, "mov rsi, ebx\n");
+    fprintf(fp, "mov rsi, rbx\n");
     fprintf(fp, "xor rax, rax\n");
     fprintf(fp, "call printf\n");
     fprintf(fp, "mov rax, 60\n");
