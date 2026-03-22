@@ -81,4 +81,5 @@ void fill_function_definition(Node *funcNode, FILE *fp);
 void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FILE *fp);
 void print_global_symbol_table(struct table_symbole *globalTable, int size);
 void parcours_instruction(Node *root, struct table_symbole *globalTable, FILE *file);
+void check_all_declarations(Node *root, struct table_symbole *table, int tbl_size);
 #endif

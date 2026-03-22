@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern int lineno = 0; /* from lexer */
+extern int yylineno;
 
 static const char *StringFromLabel[] = {"Prog",
                                         "DeclVars",
@@ -63,7 +63,7 @@ Node *makeNode(label_t label, char *text) {
   /* take ownership of `text` (lexer allocated with strdup) */
   node->text = text;
   node->firstChild = node->nextSibling = NULL;
-  node->lineno = lineno;
+  node->lineno = yylineno;
   return node;
 }
 

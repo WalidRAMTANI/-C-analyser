@@ -205,9 +205,13 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
   Node *enTete = funcNode->firstChild;
   Node *corps = enTete->nextSibling;
 
-  // enTete: TYPE/VOID/STRUCT, IDENT (name), Parametres
+  // enTete: TYPE/VOID IDENT Parametres, or STRUCT IDENT(type) IDENT(name) Parametres
   Node *typeNode = enTete->firstChild;
   Node *nameNode = typeNode->nextSibling;
+  // Pour les fonctions retournant un struct: STRUCT, IDENT(type), IDENT(name), Parametres
+  if (typeNode->label == NODE_STRUCT) {
+    nameNode = nameNode->nextSibling;
+  }
   Node *paramsNode = nameNode->nextSibling;
 
   struct definition_info *q_def = malloc(sizeof(struct definition_info));
@@ -220,7 +224,7 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
   if(strcmp(q_def->identifiant, "main") == 0) {
       if(fp) {
         fprintf(fp, "section .data\n");
-        fprintf(fp, "format db \"Value: %d\", 10, 0\n"); // Format string for printf
+        fprintf(fp, "format db \"Value: %%d\", 10, 0\n"); // Format string for printf
           fprintf(fp, "section .text\n");
           fprintf(fp, "global _start\n");
           fprintf(fp, "extern printf\n");
@@ -291,6 +295,7 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
   if (declVarsNode && declVarsNode->label == NODE_DeclVars) {
     Node *current_var = declVarsNode->firstChild;
     while (current_var) {
+      /* Gérer les définitions de struct locales */
       if (current_var->label == NODE_VAR_DECL && current_var->firstChild) {
         Node *l_typeNode = current_var->firstChild;
         char *l_type = l_typeNode->text;
@@ -316,6 +321,8 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
           }
           declarator = declarator->nextSibling;
         }
+      } else if (current_var->label == NODE_STRUCT_DEF) {
+        fill_struct_definition(current_var);
       }
       current_var = current_var->nextSibling;
     }
@@ -452,11 +459,11 @@ static const char *get_ret_type_str(enum type_var type) {
 void print_global_symbol_table(struct table_symbole *globalTable, int size) {
   if (!globalTable)
     return;
-
+  
   printf("\n+------------------------------------------------------------------"
-         "---------+\n");
-  printf("|                            GLOBAL SYMBOL TABLE                     "
-         "        |\n");
+    "---------+\n");
+    printf("|                            GLOBAL SYMBOL TABLE                     "
+      "        |\n");
   printf("+----------------------+------------+------------+-----------+-------"
          "--------+\n");
   printf("| %-20s | %-10s | %-10s | %-9s | %-13s |\n", "Identifier", "Kind",
@@ -515,4 +522,260 @@ void print_global_symbol_table(struct table_symbole *globalTable, int size) {
     }
   }
   printf("\n");
+}
+
+
+
+
+/* ===== TDC6 Exercice 1 : Vérification des déclarations ===== */
+
+/* Recherche une variable dans les paramètres, locaux de la fonction, et les globales */
+static struct variable_info *find_variable(const char *name,
+                                           struct definition_info *func,
+                                           struct table_symbole *table,
+                                           int tbl_size) {
+  if (!name) return NULL;
+  /* Paramètres de la fonction courante */
+  if (func) {
+    struct variable_info *p = func->liste_champs;
+    while (p) {
+      if (strcmp(p->identifiant, name) == 0) return p;
+      p = p->next;
+    }
+    /* Variables locales de la fonction courante */
+    struct variable_info *l = func->liste_locaux;
+    while (l) {
+      if (strcmp(l->identifiant, name) == 0) return l;
+      l = l->next;
+    }
+  }
+  /* Variables globales */
+  for (int i = 0; i < tbl_size; i++) {
+    if (table[i].type == SYMBOL_VAR && table[i].info.variable &&
+        strcmp(table[i].info.variable->identifiant, name) == 0) {
+      return table[i].info.variable;
+    }
+  }
+  return NULL;
+}
+
+/* Forward declaration de get_expr_type */
+static enum type_nature get_expr_type(Node *expr, struct definition_info *func,
+                             struct table_symbole *table, int tbl_size, struct definition_info **struct_def);
+
+/* Vérifie un seul nœud (sans parcourir ses frères) */
+static void check_node(Node *node, struct definition_info *func,
+                        struct table_symbole *table, int tbl_size);
+
+/* Vérifie un nœud et tous ses frères */
+static void check_node_list(Node *node, struct definition_info *func,
+                             struct table_symbole *table, int tbl_size) {
+  while (node) {
+    check_node(node, func, table, tbl_size);
+    node = node->nextSibling;
+  }
+}
+
+static void check_node(Node *node, struct definition_info *func,
+                        struct table_symbole *table, int tbl_size) {
+  if (!node) return;
+
+  switch (node->label) {
+
+  case NODE_IDENT:
+    if (node->firstChild && node->firstChild->label == NODE_Arguments) {
+      /* Appel de fonction via la règle Value : IDENT '(' Arguments ')' */
+      if (!find_in_table_symbole(node->text, table, tbl_size)) {
+        fprintf(stderr, "Error line %d: undeclared function '%s'\n",
+                node->lineno, node->text);
+      }
+      /* Vérifier les expressions dans les arguments */
+      check_node_list(node->firstChild, func, table, tbl_size);
+    } else {
+      /* Référence simple à une variable / paramètre */
+      if (!find_variable(node->text, func, table, tbl_size) &&
+          !find_in_table_symbole(node->text, table, tbl_size)) {
+        fprintf(stderr, "Error line %d: undeclared identifier '%s'\n",
+                node->lineno, node->text);
+      }
+    }
+    break;
+
+  case NODE_CALL_FUNCTION:
+    /* Premier enfant = nom de la fonction (NODE_IDENT), second = Arguments */
+    if (node->firstChild && node->firstChild->label == NODE_IDENT) {
+      if (!find_in_table_symbole(node->firstChild->text, table, tbl_size)) {
+        fprintf(stderr, "Error line %d: undeclared function '%s'\n",
+                node->firstChild->lineno, node->firstChild->text);
+      }
+    }
+    /* Vérifier les arguments (on saute le nom de la fonction) */
+    if (node->firstChild && node->firstChild->nextSibling) {
+      check_node_list(node->firstChild->nextSibling, func, table, tbl_size);
+    }
+    break;
+
+  case NODE_DOT:
+    /* Accès membre : on vérifie seulement la partie gauche (la variable),
+       pas le nom du champ à droite */
+    if (node->firstChild) {
+      check_node(node->firstChild, func, table, tbl_size);
+    }
+    break;
+
+  case NODE_DeclVars:
+    /* Déclarations de variables : on ne les vérifie pas ici, elles définissent
+       des variables */
+    break;
+  case NODE_ASSIGN:
+    {
+      Node *lvalue = node->firstChild;
+      Node *rvalue = lvalue ? lvalue->nextSibling : NULL;
+      if (lvalue && rvalue) {
+        check_node(lvalue, func, table, tbl_size);
+        check_node(rvalue, func, table, tbl_size);
+        enum type_nature ltype = get_expr_type(lvalue, func, table, tbl_size, NULL);
+        enum type_nature rtype = get_expr_type(rvalue, func, table, tbl_size, NULL);
+        if (ltype == CHAR && rtype == INT) {
+          fprintf(stderr, "Warning line %d: assigning 'int' to 'char' variable\n", node->lineno);
+        }
+        break;
+      }
+    }
+  default:
+    /* Pour tous les autres nœuds, parcourir les enfants */
+    check_node_list(node->firstChild, func, table, tbl_size);
+    break;
+  }
+}
+
+/* Cherche un champ par nom dans un struct, récursivement dans les sous-structs */
+static struct variable_info *find_field_recursive(struct definition_info *def,
+                                                   const char *field_name) {
+  if (!def || !field_name) return NULL;
+
+  struct variable_info *field = def->liste_champs;
+  while (field) {
+    if (strcmp(field->identifiant, field_name) == 0)
+      return field;
+
+    // Si ce champ est lui-même un struct, chercher dedans
+    if (field->type_nature == STRUCTURE && field->type_def) {
+      struct variable_info *nested = find_field_recursive(field->type_def, field_name);
+      if (nested) return nested;
+    }
+
+    field = field->next;
+  }
+  return NULL;
+}
+// get type expression
+static enum type_nature get_expr_type(Node *expr, struct definition_info *func,
+                             struct table_symbole *table, int tbl_size, struct definition_info **struct_def) {
+  if (!expr)
+    return INT;
+  switch (expr->label) {
+  case NODE_NUM:
+    return INT;
+  case NODE_CHARACTER:
+    return CHAR;
+  case NODE_IDENT:
+    {
+      struct variable_info *var = find_variable(expr->text, func, table, tbl_size);
+      if (var) {
+        if (struct_def) {
+          *struct_def = var->type_def; // Set struct definition if requested
+        }
+        return var->type_nature;
+      }
+      return INT;
+  }
+  case NODE_ADDSUB:
+  case NODE_DIVSTAR:
+  case NODE_OR:
+  case NODE_AND:
+  case NODE_EQ:
+  case NODE_ORDER:
+    return INT;
+  case NODE_UNARY:
+  case NODE_NOT:
+    return INT;
+  case NODE_CALL_FUNCTION:
+    {
+      if (expr->firstChild && expr->firstChild->label == NODE_IDENT) {
+        struct definition_info *def = find_in_table_symbole(expr->firstChild->text, table, tbl_size);
+        if (def) {
+          if(def->return_type == T_VOID) {
+            fprintf(stderr, "Warning line %d: function '%s' returns void and cannot be used in an expression\n",
+                    expr->firstChild->lineno, expr->firstChild->text);
+            return INT; // Indicate error with a special type  
+          }
+          return def->return_type == T_CHAR ? CHAR : INT;
+        }
+      }
+      return INT;
+    }
+  case NODE_DOT:
+    {
+      struct definition_info *left_struct = NULL;
+      enum type_nature left_type = get_expr_type(expr->firstChild, func, table,
+                                                tbl_size, &left_struct);
+      if (left_type == STRUCTURE && left_struct) {
+         Node *field_name = expr->firstChild->nextSibling;
+        struct variable_info *found = find_field_recursive(left_struct, field_name->text);
+        if (found) {
+            if (struct_def) *struct_def = found->type_def;
+            return found->type_nature;
+        }
+        fprintf(stderr, "Error line %d: struct '%s' has no field '%s'\n",
+                expr->lineno, left_struct->identifiant, field_name->text);
+    }
+    return INT;
+  }
+  default:
+    return INT; // Default type for unhandled cases
+  }
+}
+
+
+/* Point d'entrée : parcourir toutes les fonctions et vérifier les déclarations */
+void check_all_declarations(Node *root, struct table_symbole *table, int tbl_size) {
+  if (!root) return;
+
+  Node *current = root->firstChild;
+  while (current) {
+    if (current->label == NODE_DeclFoncts) {
+      Node *func_node = current->firstChild;
+      while (func_node) {
+        if (func_node->label == NODE_DeclFonct) {
+          /* Récupérer le nom de la fonction depuis EnTeteFonct */
+          Node *enTete = func_node->firstChild;
+          Node *typeNode = enTete->firstChild;
+          Node *nameNode = typeNode->nextSibling;
+          /* Cas struct retour : STRUCT IDENT(type) IDENT(nom) */
+          if (typeNode->label == NODE_STRUCT) {
+            nameNode = nameNode->nextSibling;
+          }
+
+          struct definition_info *func_def =
+              find_in_table_symbole(nameNode->text, table, tbl_size);
+
+          /* Parcourir le corps de la fonction */
+          Node *corps = enTete->nextSibling;
+          if (corps) {
+            Node *suite = corps->firstChild;
+            /* Sauter DeclVars pour aller à SuiteInstr */
+            if (suite && suite->label == NODE_DeclVars) {
+              suite = suite->nextSibling;
+            }
+            if (suite) {
+              check_node_list(suite->firstChild, func_def, table, tbl_size);
+            }
+          }
+        }
+        func_node = func_node->nextSibling;
+      }
+    }
+    current = current->nextSibling;
+  }
 }

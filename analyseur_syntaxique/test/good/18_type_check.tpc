@@ -1,0 +1,134 @@
+// =============================================
+// Test file for TDC6 - Type checking & declarations
+// =============================================
+
+// --- Structs ---
+struct Point {
+    int x;
+    int y;
+};
+
+struct Color {
+    int r;
+    int g;
+    int b;
+};
+
+struct Nested {
+    int val;
+    struct Point pos;
+};
+
+// --- Global variables ---
+int g_int;
+char g_char;
+
+// --- Functions with different return types ---
+int get_int(void) {
+    return 42;
+}
+
+char get_char(void) {
+    return 'z';
+}
+
+void do_nothing(void) {
+    return;
+}
+
+// --- Main test function ---
+int main(void) {
+    // Local variables
+    int a, b;
+    char c, d;
+    struct Point p1;
+    struct Color col;
+    struct Nested nest;
+
+    // ===== 1. OK cases (no warning expected) =====
+
+    // int = int literal
+    a = 10;
+
+    // int = int variable
+    b = a;
+
+    // char = char literal
+    c = 'x';
+
+    // char = char variable
+    d = c;
+
+    // int = char (promotion, OK)
+    a = c;
+
+    // int = arithmetic expression (always int)
+    a = b + 10;
+    a = b * 2;
+    a = b - a;
+    a = b / 2;
+
+    // int = comparison (always int)
+    a = b == 10;
+    a = b < 5;
+
+    // int = logical (always int)
+    a = b || a;
+    a = b && a;
+    a = !b;
+
+    // int = unary
+    a = -b;
+    a = +b;
+
+    // int = function returning int
+    a = get_int();
+
+    // char = function returning char
+    c = get_char();
+
+    // struct field access (int field = int)
+    a = p1.x;
+    p1.x = 5;
+    p1.y = 10;
+
+    // nested struct field
+    nest.val = 99;
+
+    // int = global variable
+    a = g_int;
+    c = g_char;
+
+    // ===== 2. WARNING cases (char = int) =====
+
+    // char = int variable  --> WARNING
+    c = a;
+
+    // char = int literal   --> WARNING
+    d = 42;
+
+    // char = arithmetic    --> WARNING
+    c = a + b;
+
+    // char = function returning int --> WARNING
+    d = get_int();
+
+    // char = comparison    --> WARNING
+    c = a == b;
+
+    // char = int struct field --> WARNING
+    d = p1.x;
+
+    // char = global int    --> WARNING
+    c = g_int;
+
+    // ===== 3. Declaration errors (undeclared) =====
+
+    // undeclared variable
+    a = unknown_var;
+
+    // undeclared function
+    a = missing_func(1);
+
+    return 0;
+}

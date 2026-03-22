@@ -1947,6 +1947,8 @@ int main(int argc, char **argv) {
     // ----- - tp5 partie 2 -----
     fill_global_symbol_table(ptr, globalTable, fp);
     print_global_symbol_table(globalTable, size);
+    // ----- TDC6 Exercice 1 : Vérification des déclarations -----
+    check_all_declarations(ptr, globalTable, size);
     // ----- - tp5 partie 2 -----
     parcours_instruction(ptr, globalTable, fp);
     fprintf(fp, "mov rdi, format\n");

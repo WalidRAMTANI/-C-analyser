@@ -37,13 +37,13 @@ void  read_instructions(Node * func_node, struct table_symbole * globalTable, FI
             if(instruction->firstChild && instruction->firstChild->nextSibling) {
                 Node *varNode = instruction->firstChild;
                 Node *exprNode = instruction->firstChild->nextSibling;
-                fprintf(file, "push %s\n", exprNode->firstChild->text ? exprNode->firstChild->text : "unknown");
                 fprintf(file, "push %s\n", exprNode->firstChild->nextSibling->text ? exprNode->firstChild->nextSibling->text : "unknown");
+                fprintf(file, "push %s\n", exprNode->firstChild->text ? exprNode->firstChild->text : "unknown");
                 fprintf(file, "; Expression evaluation would go here\n");
-                fprintf(file, "pop ebx\n");
-                fprintf(file, "pop eax\n");
-                fprintf(file, "; After expression evaluation, we would have the value in eax and the variable address in ebx\n");
-                fprintf(file, "sub ebx, eax\n");
+                fprintf(file, "pop rbx\n");
+                fprintf(file, "pop rax\n");
+                fprintf(file, "; After expression evaluation, we would have the value in rax and the variable address in rbx\n");
+                fprintf(file, "sub rbx, rax\n");
             }
         }
         else if(instruction->label == NODE_RETURN) {
