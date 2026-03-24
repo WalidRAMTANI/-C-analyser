@@ -18,10 +18,14 @@ YACC_O = tpcas.tab.o
 LEX_O = tpcas.yy.o
 COMPILER_O = compiler.o
 INSTR_O = instruction.o
+ASSEMBLER_EXEC = _anonymous
+ASSEMBLER_SRC = _anonymous.asm
+ASSEMBLER_OBJ = _anonymous.o
+
 CC = gcc
 CFLAGS = -Wall -Wextra -I$(INC_DIR) -I$(COMPILER_INC)
 
-all: $(EXEC)
+all: $(EXEC) $(ASSEMBLER_EXEC)
 
 $(EXEC): $(YACC_O) $(LEX_O) $(TREE_O) $(COMPILER_O) $(INSTR_O)
 	$(CC) $(CFLAGS) -o $@ $^ -ll
@@ -48,6 +52,15 @@ $(YACC_C) $(YACC_H): $(YACC_SRC)
 
 $(LEX_C): $(LEX_SRC) $(YACC_H)
 	flex -o $@ $(LEX_SRC)
+
+
+# Assembler
+$(ASSEMBLER_OBJ): $(ASSEMBLER_SRC)
+	nasm -f elf64 $(ASSEMBLER_SRC) -o $(ASSEMBLER_OBJ)
+
+# Lier
+$(ASSEMBLER_EXEC): $(ASSEMBLER_OBJ)
+	ld $(ASSEMBLER_OBJ) -o $(ASSEMBLER_EXEC) -lc -dynamic-linker /lib64/ld-linux-x86-64.so.2
 
 clean:
 	rm -f *.o $(EXEC) $(SRC_DIR)tpcas.tab.c $(SRC_DIR)tpcas.yy.c $(INC_DIR)tpcas.tab.h

@@ -6,6 +6,75 @@ struct table_symbole globalTable[100];
 int size = 0;
 int offset = 0;
 
+// initialise the table symbole with the global functions of C library.
+void init_global_table() {
+  // add getchar
+  struct definition_info *getchar_def = malloc(sizeof(struct definition_info));
+  getchar_def->identifiant = strdup("getchar");
+  getchar_def->kind = D_FUNC;
+  getchar_def->return_type = T_CHAR;
+  getchar_def->liste_champs = NULL;
+  getchar_def->liste_locaux = NULL;
+  getchar_def->body = NULL;
+  getchar_def->total_size = 0;
+  // create a table_symbole for getchar and add it to the global table.
+  struct table_symbole getchar_element;
+  getchar_element.type = SYMBOL_DEF;
+  getchar_element.info.definition = getchar_def;
+  add_to_table_symbole(&getchar_element, globalTable, &size);
+
+  // add putchar
+  struct definition_info *putchar_def = malloc(sizeof(struct definition_info));
+  putchar_def->identifiant = strdup("putchar");
+  putchar_def->kind = D_FUNC;
+  putchar_def->return_type = T_VOID;
+  putchar_def->liste_champs = malloc(sizeof(struct variable_info));
+  putchar_def->liste_champs->identifiant = strdup("c");
+  putchar_def->liste_champs->type_nature = CHAR;
+  putchar_def->liste_champs->next = NULL;
+  putchar_def->liste_locaux = NULL;
+  putchar_def->body = NULL;
+  putchar_def->total_size = 1; // 1 byte for the char parameter
+  // create a table_symbole for putchar and add it to the global table.
+  struct table_symbole putchar_element;
+  putchar_element.type = SYMBOL_DEF;
+  putchar_element.info.definition = putchar_def;
+  add_to_table_symbole(&putchar_element, globalTable, &size);
+
+// add getint
+  struct definition_info *getint_def = malloc(sizeof(struct definition_info));
+  getint_def->identifiant = strdup("getint");
+  getint_def->kind = D_FUNC;
+  getint_def->return_type = T_INT;
+  getint_def->liste_champs = NULL;
+  getint_def->liste_locaux = NULL;
+  getint_def->body = NULL;
+  getint_def->total_size = 0;
+  // create a table_symbole for getint and add it to the global table.
+  struct table_symbole getint_element;
+  getint_element.type = SYMBOL_DEF;
+  getint_element.info.definition = getint_def;
+  add_to_table_symbole(&getint_element, globalTable, &size);
+
+  // add putint
+  struct definition_info *putint_def = malloc(sizeof(struct definition_info));
+  putint_def->identifiant = strdup("putint");
+  putint_def->kind = D_FUNC;
+  putint_def->return_type = T_VOID;
+  putint_def->liste_champs = malloc(sizeof(struct variable_info));
+  putint_def->liste_champs->identifiant = strdup("n");
+  putint_def->liste_champs->type_nature = INT;
+  putint_def->liste_champs->next = NULL;
+  putint_def->liste_locaux = NULL;
+  putint_def->body = NULL;
+  putint_def->total_size = 4; // 4 bytes for the int parameter
+  // create a table_symbole for putint and add it to the global table.
+  struct table_symbole putint_element;
+  putint_element.type = SYMBOL_DEF;
+  putint_element.info.definition = putint_def;
+  add_to_table_symbole(&putint_element, globalTable, &size);
+}
+
 // helper function to get the size of a type.
 static int get_size(enum type_nature type) {
   switch (type) {
@@ -386,10 +455,15 @@ struct table_symbole fill_variable_declaration(Node *declarators, char *type) {
 void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FILE *fp) {
   if (!root || !globalTable)
     return;
-
+  // initialize the global table with the standard library functions
+  init_global_table();
   Node *current = root->firstChild;
   while (current) {
     if (current->label == NODE_DeclVars) {
+      // handle global variable declarations
+      if(fp){
+        fprintf(fp, "section .bss\n");
+      }
       Node *var_node = current->firstChild;
       while (var_node) {
         if (var_node->label == NODE_VAR_DECL && var_node->firstChild) {
@@ -406,6 +480,17 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
                 fill_variable_declaration(declarators, type_str);
             if (element.type != SYMBOL_EMPTY) {
               add_to_table_symbole(&element, globalTable, &size);
+            }
+            // allocate space in .bss for global variable
+            if(fp){
+              struct variable_info *var_info = element.info.variable;
+              if(var_info && var_info->type_nature ==  INT) {
+                fprintf(fp, " %s resd 1\n", var_info->identifiant);
+              }else if(var_info && var_info->type_nature == CHAR) {
+                fprintf(fp, " %s resb 1\n", var_info->identifiant);
+              } else if(var_info && var_info->type_nature == STRUCTURE) {
+                fprintf(fp, " %s resb %d\n", var_info->identifiant, var_info->type_def->total_size);
+              }
             }
             declarators = declarators->nextSibling;
           }

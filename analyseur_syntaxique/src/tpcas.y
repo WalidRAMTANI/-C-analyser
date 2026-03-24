@@ -324,15 +324,15 @@ int main(int argc, char **argv) {
     extern struct table_symbole globalTable[100];
     extern int size;
     // ----- - tp5 partie 2 -----
-    //FILE *fp = fopen("_anonymous.asm", "w");
-    FILE *fp = NULL; // Just for testing, we won't generate assembly yet
+    FILE *fp = fopen("_anonymous.asm", "w");
+    //FILE *fp = NULL; // Just for testing, we won't generate assembly yet
     // ----- - tp5 partie 2 -----
     fill_global_symbol_table(ptr, globalTable, fp);
     print_global_symbol_table(globalTable, size);
     // ----- TDC6 Exercice 1 : Vérification des déclarations -----
     check_all_declarations(ptr, globalTable, size);
     // ----- - tp5 partie 2 -----
-    /*parcours_instruction(ptr, globalTable, fp);
+    parcours_instruction(ptr, globalTable, fp);
     fprintf(fp, "mov rdi, format\n");
     fprintf(fp, "mov rsi, rbx\n");
     fprintf(fp, "xor rax, rax\n");
@@ -341,7 +341,7 @@ int main(int argc, char **argv) {
     fprintf(fp, "xor rdi, rdi\n");
     fprintf(fp, "syscall\n");
     fclose(fp);
-    */
+    
     // ----- - tp5 partie 3 -----
     deleteTree(ptr);
     return result;

@@ -1944,6 +1944,7 @@ int main(int argc, char **argv) {
     extern int size;
     // ----- - tp5 partie 2 -----
     FILE *fp = fopen("_anonymous.asm", "w");
+    //FILE *fp = NULL; // Just for testing, we won't generate assembly yet
     // ----- - tp5 partie 2 -----
     fill_global_symbol_table(ptr, globalTable, fp);
     print_global_symbol_table(globalTable, size);
@@ -1959,6 +1960,7 @@ int main(int argc, char **argv) {
     fprintf(fp, "xor rdi, rdi\n");
     fprintf(fp, "syscall\n");
     fclose(fp);
+    
     // ----- - tp5 partie 3 -----
     deleteTree(ptr);
     return result;
