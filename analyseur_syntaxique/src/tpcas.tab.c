@@ -1956,9 +1956,8 @@ int main(int argc, char **argv) {
     fprintf(fp, "mov rsi, rbx\n");
     fprintf(fp, "xor rax, rax\n");
     fprintf(fp, "call printf\n");
-    fprintf(fp, "mov rax, 60\n");
     fprintf(fp, "xor rdi, rdi\n");
-    fprintf(fp, "syscall\n");
+    fprintf(fp, "ret\n");
     fclose(fp);
     
     // ----- - tp5 partie 3 -----

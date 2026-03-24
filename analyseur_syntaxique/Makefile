@@ -53,15 +53,14 @@ $(YACC_C) $(YACC_H): $(YACC_SRC)
 $(LEX_C): $(LEX_SRC) $(YACC_H)
 	flex -o $@ $(LEX_SRC)
 
+$(ASSEMBLER_SRC): $(EXEC)
+	./$(EXEC) test/good/tp5.tpc
 
-# Assembler
 $(ASSEMBLER_OBJ): $(ASSEMBLER_SRC)
-	nasm -f elf64 $(ASSEMBLER_SRC) -o $(ASSEMBLER_OBJ)
+	nasm -f elf64 $< -o $@
 
-# Lier
 $(ASSEMBLER_EXEC): $(ASSEMBLER_OBJ)
-	ld $(ASSEMBLER_OBJ) -o $(ASSEMBLER_EXEC) -lc -dynamic-linker /lib64/ld-linux-x86-64.so.2
-
+	gcc -no-pie -o $(ASSEMBLER_EXEC) $(ASSEMBLER_OBJ)  
 clean:
 	rm -f *.o $(EXEC) $(SRC_DIR)tpcas.tab.c $(SRC_DIR)tpcas.yy.c $(INC_DIR)tpcas.tab.h
 
