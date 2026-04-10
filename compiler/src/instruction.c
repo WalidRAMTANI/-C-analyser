@@ -1,6 +1,46 @@
 #include "compiler.h"
 #include <stdio.h>
 
+void calculate_expr(Node *exprNode, FILE *file){
+    if(exprNode->firstChild) {
+        fprintf(file, "push %s\n", exprNode->firstChild->nextSibling->text);
+        if(exprNode->firstChild->nextSibling->label == NODE_IDENT) {
+            fprintf(file, "push %s\n", exprNode->firstChild->text);
+        }else {
+            calculate_expr(exprNode->firstChild, file);
+            fprintf(file, "push rax\n");
+        }
+        fprintf(file, "pop rbx\n");
+        fprintf(file, "pop rax\n");
+        if(exprNode->label == NODE_ADDSUB) {
+            fprintf(file, "%s rax, rbx\n", exprNode->text[0] == '+' ? "add" : "sub");
+        } else if(exprNode->label == NODE_DIVSTAR) {
+            fprintf(file, "%s rax, rbx\n", exprNode->text[0] == '*' ? "imul" : "xor rdx, rdx\nidiv rbx");
+        } else if(exprNode->label == NODE_OR) {
+            fprintf(file, "or rax, rbx\n");
+        } else if(exprNode->label == NODE_AND) {
+            fprintf(file, "and rax, rbx\n");
+        } else if(exprNode->label == NODE_EQ) {
+            fprintf(file, "cmp rax, rbx\n");
+            fprintf(file, "sete al\n");
+            fprintf(file, "movzx rax, al\n");
+        } else if(exprNode->label == NODE_ORDER) {
+            fprintf(file, "cmp rax, rbx\n");
+            if(exprNode->text[0] == '<') {
+                fprintf(file, "setl al\n");
+            } else if(exprNode->text[0] == '>') {
+                fprintf(file, "setg al\n");
+            } else if(exprNode->text[0] == '!' && exprNode->text[1] == '=') {
+                fprintf(file, "setne al\n");
+            }
+            fprintf(file, "movzx rax, al\n");
+        }
+    } else {
+        // check if it's a variable or a number
+        fprintf(file, "mov rbx, %s\n", exprNode->text);
+    }
+}
+
 void  read_instructions(Node * func_node, struct table_symbole * globalTable, FILE *file){
     if (!func_node || !globalTable || !file)
         return;
@@ -29,15 +69,23 @@ void  read_instructions(Node * func_node, struct table_symbole * globalTable, FI
             if(instruction->firstChild && instruction->firstChild->nextSibling) {
                 Node *varNode = instruction->firstChild;
                 Node *exprNode = instruction->firstChild->nextSibling;
-                fprintf(file, "push %s\n", exprNode->firstChild->nextSibling->text ? exprNode->firstChild->nextSibling->text : "unknown");
-                fprintf(file, "push %s\n", exprNode->firstChild->text ? exprNode->firstChild->text : "unknown");
-                fprintf(file, "; Expression evaluation would go here\n");
-                fprintf(file, "pop rbx\n");
-                fprintf(file, "pop rax\n");
-                fprintf(file, "; After expression evaluation, we would have the value in rax and the variable address in rbx\n");
-                fprintf(file, "sub rbx, rax\n");
+                // treat global variables only for now, local variables will be handled in the next part of the project
+                 struct variable_info *var_info = find_variable(varNode->text, NULL, globalTable, size);
+                if(var_info && var_info->container == NULL) {
+                    if(exprNode->firstChild) {
+                        fprintf(file, "push %s\n", exprNode->firstChild->nextSibling->text);
+                        fprintf(file, "push %s\n", exprNode->firstChild->text);
+                        fprintf(file, "pop rbx\n");
+                        fprintf(file, "pop rax\n");
+                        fprintf(file, "sub rbx, rax\n");
+                    }else {
+                        fprintf(file, "mov eax, %s\n", exprNode->text);
+                        fprintf(file, "mov dword [%s], eax\n", varNode->text);
+                    }
+                
             }
         }
+        // return statement
         else if(instruction->label == NODE_RETURN) {
             fprintf(file, "; Return statement found\n");
             // Handle return

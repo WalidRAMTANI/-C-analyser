@@ -295,9 +295,9 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
         fprintf(fp, "section .data\n");
         fprintf(fp, "format db \"Value: %%d\", 10, 0\n"); // Format string for printf
           fprintf(fp, "section .text\n");
-          fprintf(fp, "global _start\n");
+          fprintf(fp, "global main\n");
           fprintf(fp, "extern printf\n");
-          fprintf(fp, "_start:\n");
+          fprintf(fp, "main:\n");
       }
   }
   // ------- partie TP5 partie 2 -------
@@ -482,13 +482,13 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
               add_to_table_symbole(&element, globalTable, &size);
             }
             // allocate space in .bss for global variable
-            if(fp){
+            if(fp && element.type == SYMBOL_VAR) {
               struct variable_info *var_info = element.info.variable;
-              if(var_info && var_info->type_nature ==  INT) {
+              if(var_info && var_info->container == NULL && var_info->type_nature ==  INT) {
                 fprintf(fp, " %s resd 1\n", var_info->identifiant);
-              }else if(var_info && var_info->type_nature == CHAR) {
+              }else if(var_info && var_info->container == NULL && var_info->type_nature == CHAR) {
                 fprintf(fp, " %s resb 1\n", var_info->identifiant);
-              } else if(var_info && var_info->type_nature == STRUCTURE) {
+              } else if(var_info && var_info->container == NULL && var_info->type_nature == STRUCTURE) {
                 fprintf(fp, " %s resb %d\n", var_info->identifiant, var_info->type_def->total_size);
               }
             }
