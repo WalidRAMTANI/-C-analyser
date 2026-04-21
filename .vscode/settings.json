@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.{a80,z80,asm,inc,s}": "asm-collection",
+        "*.{list,lis}": "asm-collection-list",
+        "compiler.h": "c"
+    }
+}

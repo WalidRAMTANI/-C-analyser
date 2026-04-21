@@ -83,6 +83,7 @@ void  read_instructions(Node * func_node, struct table_symbole * globalTable, FI
                         fprintf(file, "mov dword [%s], eax\n", varNode->text);
                     }
                 
+                }
             }
         }
         // return statement

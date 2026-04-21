@@ -615,7 +615,7 @@ void print_global_symbol_table(struct table_symbole *globalTable, int size) {
 /* ===== TDC6 Exercice 1 : Vérification des déclarations ===== */
 
 /* Recherche une variable dans les paramètres, locaux de la fonction, et les globales */
-static struct variable_info *find_variable(const char *name,
+struct variable_info *find_variable(const char *name,
                                            struct definition_info *func,
                                            struct table_symbole *table,
                                            int tbl_size) {

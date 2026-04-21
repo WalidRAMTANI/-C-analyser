@@ -82,4 +82,8 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
 void print_global_symbol_table(struct table_symbole *globalTable, int size);
 void parcours_instruction(Node *root, struct table_symbole *globalTable, FILE *file);
 void check_all_declarations(Node *root, struct table_symbole *table, int tbl_size);
+struct variable_info *find_variable(const char *name,
+                                           struct definition_info *func,
+                                           struct table_symbole *table,
+                                           int tbl_size);
 #endif

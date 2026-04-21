@@ -5,11 +5,8 @@
 #include "compiler.h"
 int yylex();
 extern int yylineno;
-int yyerror(char *msg) {
-    fprintf(stderr, "%d: %s\n", yylineno, msg);
-    return 1;
-}
-    extern FILE *yyin;
+int yyerror(char *msg);
+extern FILE *yyin;
 Node *ptr = NULL;
 %}
 
@@ -268,6 +265,10 @@ ListExp
 
 %%
     
+int yyerror(char *msg) {
+    fprintf(stderr, "%d: %s\n", yylineno, msg);
+    return 1;
+}
 
 void print_usage(char *prog_name) {
     printf("Usage: %s [OPTIONS] [FILE.tpc]\n", prog_name);
