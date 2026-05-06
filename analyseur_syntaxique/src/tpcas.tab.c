@@ -1891,77 +1891,109 @@ int yyerror(char *msg) {
 
 void print_usage(char *prog_name) {
     printf("Usage: %s [OPTIONS] [FILE.tpc]\n", prog_name);
-    printf("Analyseur syntaxique pour le langage TPC\n\n");
+    printf("Compilateur pour le langage TPC\n\n");
     printf("Options:\n");
     printf("  -t, --tree        Affiche l'arbre abstrait sur la sortie standard\n");
-    printf("  -h, --help        Affiche cette aide et termine l'exécution\n\n");
-    printf("\nValeurs de retour:\n");
-    printf("  0  Aucune erreur lexicale ni syntaxique\n");
-    printf("  1  Erreur lexicale ou syntaxique détectée\n");
-    printf("  2+ Autres erreurs (ligne de commande, mémoire, etc.)\n");
+    printf("  -s, --symtabs     Affiche toutes les tables des symboles\n");
+    printf("  -h, --help        Affiche cette aide et termine l'execution\n\n");
+    printf("Valeurs de retour:\n");
+    printf("  0  Aucune erreur\n");
+    printf("  1  Erreur lexicale ou syntaxique\n");
+    printf("  2  Erreur semantique\n");
+    printf("  3  Autre erreur (ligne de commande, memoire, ...)\n");
 }
-    
+
 int main(int argc, char **argv) {
     int show_tree = 0;
-    int noption = 1;
+    int show_symtabs = 0;
     char *input_file = NULL;
-    if(argc < 2){
-        fprintf(stderr, "Utilisez -h ou --help pour plus d'informations\n");
-        return 2;
-    }
-    for(int i = 1; i < argc; i++){
-        if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0){
+
+    /* Parcourir les arguments */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
             return 0;
-        }
-        if(strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "-tree") == 0){
-            show_tree = 1
-            ;
-            noption++;
+        } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0) {
+            show_tree = 1;
+        } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--symtabs") == 0) {
+            show_symtabs = 1;
+        } else if (argv[i][0] != '-') {
+            /* Premier argument non-option = fichier source */
+            input_file = argv[i];
+        } else {
+            fprintf(stderr, "Option inconnue: %s\n", argv[i]);
+            return 3;
         }
     }
-    if(noption < argc){
-        input_file = argv[noption];
+
+    /* Ouvrir le fichier source ou lire sur stdin */
+    if (input_file != NULL) {
         yyin = fopen(input_file, "r");
         if (!yyin) {
             fprintf(stderr, "Erreur: impossible d'ouvrir le fichier '%s'\n", input_file);
-            return 2;
+            return 3;
         }
     }
+    /* sinon yyin == NULL => yylex lit sur stdin par defaut */
+
+    /* Determiner le nom du fichier cible */
+    char output_file[512];
+    if (input_file != NULL) {
+        /* Remplacer l'extension .tpc par .asm */
+        strncpy(output_file, input_file, sizeof(output_file) - 1);
+        output_file[sizeof(output_file) - 1] = '\0';
+        char *dot = strrchr(output_file, '.');
+        if (dot != NULL)
+            *dot = '\0';
+        strncat(output_file, ".asm", sizeof(output_file) - strlen(output_file) - 1);
+    } else {
+        strncpy(output_file, "_anonymous.asm", sizeof(output_file) - 1);
+    }
+
     yylineno = 1;
-    int result = yyparse();
-    if (result != 0) {
-        fprintf(stderr, "Analyse terminée \n");
-        deleteTree(ptr);
+    int parse_result = yyparse();
+
+    if (parse_result != 0) {
+        /* Erreur lexicale ou syntaxique */
+        if (ptr) deleteTree(ptr);
+        if (input_file && yyin) fclose(yyin);
         return 1;
-        }
+    }
+
     if (show_tree) {
         printf("=== Arbre abstrait ===\n");
-        generateTreePDF(ptr);
         printTree(ptr);
-        
+        generateTreePDF(ptr);
     }
-    extern struct table_symbole globalTable[100];
-    extern int size;
-    // ----- - tp5 partie 2 -----
-    FILE *fp = fopen("_anonymous.asm", "w");
-    //FILE *fp = NULL; // Just for testing, we won't generate assembly yet
-    // ----- - tp5 partie 2 -----
+
+    /* Ouvrir le fichier assembleur cible */
+    FILE *fp = fopen(output_file, "w");
+    if (!fp) {
+        fprintf(stderr, "Erreur: impossible de creer '%s'\n", output_file);
+        deleteTree(ptr);
+        if (input_file) fclose(yyin);
+        return 3;
+    }
+
+    /* Remplir la table des symboles et generer le code */
     fill_global_symbol_table(ptr, globalTable, fp);
-    print_global_symbol_table(globalTable, size);
-    // ----- TDC6 Exercice 1 : Vérification des déclarations -----
+
+    if (show_symtabs) {
+        print_global_symbol_table(globalTable, size);
+    }
+
+    /* Verifications semantiques */
     check_all_declarations(ptr, globalTable, size);
-    // ----- - tp5 partie 2 -----
+
+    /* Generation du code pour les instructions */
     parcours_instruction(ptr, globalTable, fp);
-    fprintf(fp, "mov rdi, format\n");
-    fprintf(fp, "mov rsi, rbx\n");
-    fprintf(fp, "xor rax, rax\n");
-    fprintf(fp, "call printf\n");
-    fprintf(fp, "xor rdi, rdi\n");
-    fprintf(fp, "ret\n");
+
     fclose(fp);
-    
-    // ----- - tp5 partie 3 -----
-    deleteTree(ptr);
-    return result;
+    if (input_file && yyin) fclose(yyin);
+    if (ptr) deleteTree(ptr);
+
+    if (semantic_error)
+        return 2;
+
+    return 0;
 }

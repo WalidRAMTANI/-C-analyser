@@ -71,13 +71,17 @@ struct table_symbole {
 };
 extern struct table_symbole globalTable[100];
 extern int size;
+extern int semantic_error;
 int is_in_table_symbole(char *identifiant, struct table_symbole *table,
                         int size);
+struct definition_info *find_in_table_symbole(const char *identifiant,
+                                              struct table_symbole *table,
+                                              int size);
 void add_to_table_symbole(struct table_symbole *element,
                           struct table_symbole *table, int *size);
 struct table_symbole fill_variable_declaration(Node *declarators, char *type);
 void fill_struct_definition(Node *structNode);
-void fill_function_definition(Node *funcNode, FILE *fp);
+void fill_function_definition(Node *funcNode);
 void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FILE *fp);
 void print_global_symbol_table(struct table_symbole *globalTable, int size);
 void parcours_instruction(Node *root, struct table_symbole *globalTable, FILE *file);

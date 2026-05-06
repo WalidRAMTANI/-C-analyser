@@ -5,6 +5,7 @@
 struct table_symbole globalTable[100];
 int size = 0;
 int offset = 0;
+int semantic_error = 0;  /* mis à 1 dès qu'une erreur sémantique est détectée */
 
 // initialise the table symbole with the global functions of C library.
 void init_global_table() {
@@ -126,21 +127,23 @@ void add_to_table_symbole(struct table_symbole *element,
     return;
   if (element->type == SYMBOL_VAR && element->info.variable != NULL &&
       is_in_table_symbole(element->info.variable->identifiant, table, *size)) {
-    printf("Error: Variable %s already exists in the table.\n",
+    fprintf(stderr, "Error: Variable %s already exists in the table.\n",
            element->info.variable->identifiant);
+    semantic_error = 1;
     return;
   } else if (element->type == SYMBOL_DEF && element->info.definition != NULL &&
              is_in_table_symbole(element->info.definition->identifiant, table,
                                  *size)) {
-    printf("Error: Definition %s already exists in the table.\n",
+    fprintf(stderr, "Error: Definition %s already exists in the table.\n",
            element->info.definition->identifiant);
+    semantic_error = 1;
     return;
   }
   table[*size] = *element;
   (*size)++;
 }
 
-struct definition_info *find_in_table_symbole(char *identifiant,
+struct definition_info *find_in_table_symbole(const char *identifiant,
                                               struct table_symbole *table,
                                               int size) {
   if (!identifiant || !table)
@@ -183,7 +186,8 @@ struct variable_info *create_field_info(Node *declarator, char *type,
   if (q_variable->type_nature == STRUCTURE) {
     q_variable->type_def = find_in_table_symbole(type, globalTable, size);
     if (q_variable->type_def == NULL) {
-      printf("Error: Struct %s not found in the table.\n", type);
+      fprintf(stderr, "Error: Struct %s not found in the table.\n", type);
+      semantic_error = 1;
       free(q_variable->identifiant);
       free(q_variable);
       return NULL;
@@ -266,7 +270,7 @@ void fill_struct_definition(Node *structNode) {
   add_to_table_symbole(&element, globalTable, &size);
 }
 
-void fill_function_definition(Node *funcNode, FILE *fp) {
+void fill_function_definition(Node *funcNode) {
   if (!funcNode || funcNode->label != NODE_DeclFonct)
     return;
 
@@ -289,19 +293,6 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
 
   q_def->kind = D_FUNC;
   q_def->identifiant = strdup(nameNode->text);
-  // ------- partie TP5 partie 2 -------
-  if(strcmp(q_def->identifiant, "main") == 0) {
-      if(fp) {
-        fprintf(fp, "section .data\n");
-        fprintf(fp, "format db \"Value: %%d\", 10, 0\n"); // Format string for printf
-          fprintf(fp, "section .text\n");
-          fprintf(fp, "global main\n");
-          fprintf(fp, "extern printf\n");
-          fprintf(fp, "main:\n");
-      }
-  }
-  // ------- partie TP5 partie 2 -------
-  
   q_def->liste_champs = NULL; // Parameters
   q_def->liste_locaux = NULL; // Locals
   q_def->body = corps;
@@ -377,7 +368,7 @@ void fill_function_definition(Node *funcNode, FILE *fp) {
         while (declarator && declarator->label == NODE_IDENT) {
           if (is_in_variable_list(declarator->text, q_def->liste_champs) ||
               is_in_variable_list(declarator->text, q_def->liste_locaux)) {
-            printf("Error: Local variable %s already exists in function %s (or "
+            fprintf(stderr, "Error: Local variable %s already exists in function %s (or "
                    "overlaps with parameter).\n",
                    declarator->text, q_def->identifiant);
           } else {
@@ -430,7 +421,8 @@ struct table_symbole fill_variable_declaration(Node *declarators, char *type) {
     // For structures, we need to find the definition in the global table
     q_variable->type_def = find_in_table_symbole(type, globalTable, size);
     if (q_variable->type_def == NULL) {
-      printf("Error: Struct %s not found in the table.\n", type);
+      fprintf(stderr, "Error: Struct %s not found in the table.\n", type);
+      semantic_error = 1;
       element.type = SYMBOL_EMPTY;
       if (q_variable->identifiant)
         free(q_variable->identifiant);
@@ -460,10 +452,6 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
   Node *current = root->firstChild;
   while (current) {
     if (current->label == NODE_DeclVars) {
-      // handle global variable declarations
-      if(fp){
-        fprintf(fp, "section .bss\n");
-      }
       Node *var_node = current->firstChild;
       while (var_node) {
         if (var_node->label == NODE_VAR_DECL && var_node->firstChild) {
@@ -481,17 +469,6 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
             if (element.type != SYMBOL_EMPTY) {
               add_to_table_symbole(&element, globalTable, &size);
             }
-            // allocate space in .bss for global variable
-            if(fp && element.type == SYMBOL_VAR) {
-              struct variable_info *var_info = element.info.variable;
-              if(var_info && var_info->container == NULL && var_info->type_nature ==  INT) {
-                fprintf(fp, " %s resd 1\n", var_info->identifiant);
-              }else if(var_info && var_info->container == NULL && var_info->type_nature == CHAR) {
-                fprintf(fp, " %s resb 1\n", var_info->identifiant);
-              } else if(var_info && var_info->container == NULL && var_info->type_nature == STRUCTURE) {
-                fprintf(fp, " %s resb %d\n", var_info->identifiant, var_info->type_def->total_size);
-              }
-            }
             declarators = declarators->nextSibling;
           }
         } else if (var_node->label == NODE_STRUCT_DEF) {
@@ -503,12 +480,40 @@ void fill_global_symbol_table(Node *root, struct table_symbole *globalTable, FIL
       Node *func_node = current->firstChild;
       while (func_node) {
         if (func_node->label == NODE_DeclFonct) {
-          fill_function_definition(func_node, fp);
+          fill_function_definition(func_node);
         }
         func_node = func_node->nextSibling;
       }
     }
     current = current->nextSibling;
+  }
+  /* Émettre la section .bss pour les variables globales (après que la
+     table est entièrement remplie, pour éviter les doublons de section) */
+  if (fp) {
+    int has_globals = 0;
+    for (int i = 0; i < size; i++) {
+      if (globalTable[i].type == SYMBOL_VAR && globalTable[i].info.variable &&
+          globalTable[i].info.variable->container == NULL) {
+        has_globals = 1;
+        break;
+      }
+    }
+    if (has_globals) {
+      fprintf(fp, "section .bss\n");
+      for (int i = 0; i < size; i++) {
+        if (globalTable[i].type == SYMBOL_VAR && globalTable[i].info.variable) {
+          struct variable_info *var = globalTable[i].info.variable;
+          if (var->container != NULL) continue; /* local, pas global */
+          if (var->type_nature == INT) {
+            fprintf(fp, "    %s resd 1\n", var->identifiant);
+          } else if (var->type_nature == CHAR) {
+            fprintf(fp, "    %s resb 1\n", var->identifiant);
+          } else if (var->type_nature == STRUCTURE && var->type_def) {
+            fprintf(fp, "    %s resb %d\n", var->identifiant, var->type_def->total_size);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -673,6 +678,7 @@ static void check_node(Node *node, struct definition_info *func,
       if (!find_in_table_symbole(node->text, table, tbl_size)) {
         fprintf(stderr, "Error line %d: undeclared function '%s'\n",
                 node->lineno, node->text);
+        semantic_error = 1;
       }
       /* Vérifier les expressions dans les arguments */
       check_node_list(node->firstChild, func, table, tbl_size);
@@ -682,6 +688,7 @@ static void check_node(Node *node, struct definition_info *func,
           !find_in_table_symbole(node->text, table, tbl_size)) {
         fprintf(stderr, "Error line %d: undeclared identifier '%s'\n",
                 node->lineno, node->text);
+        semantic_error = 1;
       }
     }
     break;
@@ -692,6 +699,7 @@ static void check_node(Node *node, struct definition_info *func,
       if (!find_in_table_symbole(node->firstChild->text, table, tbl_size)) {
         fprintf(stderr, "Error line %d: undeclared function '%s'\n",
                 node->firstChild->lineno, node->firstChild->text);
+        semantic_error = 1;
       }
     }
     /* Vérifier les arguments (on saute le nom de la fonction) */
@@ -724,9 +732,9 @@ static void check_node(Node *node, struct definition_info *func,
         if (ltype == CHAR && rtype == INT) {
           fprintf(stderr, "Warning line %d: assigning 'int' to 'char' variable\n", node->lineno);
         }
-        break;
       }
     }
+    break;
   default:
     /* Pour tous les autres nœuds, parcourir les enfants */
     check_node_list(node->firstChild, func, table, tbl_size);
@@ -814,6 +822,7 @@ static enum type_nature get_expr_type(Node *expr, struct definition_info *func,
         }
         fprintf(stderr, "Error line %d: struct '%s' has no field '%s'\n",
                 expr->lineno, left_struct->identifiant, field_name->text);
+        semantic_error = 1;
     }
     return INT;
   }

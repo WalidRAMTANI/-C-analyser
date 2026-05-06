@@ -1,4 +1,4 @@
-EXEC = tpcas
+EXEC = tpcc
 
 SRC_DIR = src/
 INC_DIR = inc/
@@ -54,7 +54,7 @@ $(LEX_C): $(LEX_SRC) $(YACC_H)
 	flex -o $@ $(LEX_SRC)
 
 $(ASSEMBLER_SRC): $(EXEC)
-	./$(EXEC) test/good/tp5.tpc
+	./$(EXEC) ../test/good/gen-code-types.tpc
 
 $(ASSEMBLER_OBJ): $(ASSEMBLER_SRC)
 	nasm -f elf64 $< -o $@
@@ -65,4 +65,4 @@ clean:
 	rm -f *.o $(EXEC) $(SRC_DIR)tpcas.tab.c $(SRC_DIR)tpcas.yy.c $(INC_DIR)tpcas.tab.h
 
 mrproper: clean
-	rm -f $(EXEC)
+	rm -f $(EXEC) *.asm

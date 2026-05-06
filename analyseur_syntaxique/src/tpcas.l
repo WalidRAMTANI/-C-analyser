@@ -6,7 +6,7 @@
 #include "tpcas.tab.h"
 %}
 
-%option yylineno
+%option yylineno noinput nounput
 
 %%
 "int"           { yylval.text = strdup(yytext); return TYPE; }
