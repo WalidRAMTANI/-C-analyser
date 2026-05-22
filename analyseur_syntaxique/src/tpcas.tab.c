@@ -1925,7 +1925,7 @@ int main(int argc, char **argv) {
             return 3;
         }
     }
-
+    printf("input: %s\n", input_file);
     /* Ouvrir le fichier source ou lire sur stdin */
     if (input_file != NULL) {
         yyin = fopen(input_file, "r");

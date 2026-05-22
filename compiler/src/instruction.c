@@ -168,12 +168,12 @@ static void emit_builtin_io(FILE *fp) {
         "    add     r8, rcx\n"
         "    jmp     .getint_loop\n"
         ".getint_done:\n"
-        "    imul    r8, r8, r9\n"
+        "    imul    r8, r9\n"
         "    mov     rax, r8\n"
         "    leave\n"
         "    ret\n"
         ".getint_err:\n"
-        "    mov     rax, 60\n"
+        "    mov     rax, 60\n" 
         "    mov     rdi, 5\n"
         "    syscall\n"
         "\n"
@@ -221,9 +221,17 @@ static void emit_load_var(const char *name, struct definition_info *func,
             l = l->next;
         }
     }
-    /* global */
-    fprintf(fp, "    mov     eax, [%s]\n", name);
-    fprintf(fp, "    movsxd  rax, eax\n");
+    /* global: look up type in globalTable to choose byte/dword ops */
+    {
+        struct variable_info *gvar = find_variable(name, NULL, globalTable, size);
+        if (gvar && gvar->type_nature == CHAR) {
+            fprintf(fp, "    movzx   eax, byte [%s]\n", name);
+            fprintf(fp, "    movsxd  rax, eax\n");
+        } else {
+            fprintf(fp, "    mov     eax, dword [%s]\n", name);
+            fprintf(fp, "    movsxd  rax, eax\n");
+        }
+    }
 }
 
 /*
@@ -260,8 +268,15 @@ static void emit_store_var(const char *name, struct definition_info *func,
             l = l->next;
         }
     }
-    /* global */
-    fprintf(fp, "    mov     [%s], eax\n", name);
+    /* global: write using byte for CHAR, dword for INT */
+    {
+        struct variable_info *gvar = find_variable(name, NULL, globalTable, size);
+        if (gvar && gvar->type_nature == CHAR) {
+            fprintf(fp, "    mov     byte [%s], al\n", name);
+        } else {
+            fprintf(fp, "    mov     dword [%s], eax\n", name);
+        }
+    }
 }
 
 /*
@@ -402,11 +417,19 @@ static void emit_expr(Node *expr, struct definition_info *func, FILE *fp) {
             struct variable_info *field = var->type_def->liste_champs;
             while (field) {
                 if (strcmp(field->identifiant, field_node->text) == 0) {
-                    if (var->container == NULL)
-                        fprintf(fp, "    mov     eax, [%s + %ld]\n", var_node->text, field->adresse);
-                    else
-                        fprintf(fp, "    mov     eax, [rbp - %ld]\n", var->adresse + 8 - field->adresse);
-                    fprintf(fp, "    movsxd  rax, eax\n");
+                    if (field->type_nature == CHAR) {
+                        if (var->container == NULL)
+                            fprintf(fp, "    movzx   eax, byte [%s + %ld]\n", var_node->text, field->adresse);
+                        else
+                            fprintf(fp, "    movzx   eax, byte [rbp - %ld]\n", var->adresse + 8 - field->adresse);
+                        fprintf(fp, "    movsxd  rax, eax\n");
+                    } else {
+                        if (var->container == NULL)
+                            fprintf(fp, "    mov     eax, dword [%s + %ld]\n", var_node->text, field->adresse);
+                        else
+                            fprintf(fp, "    mov     eax, dword [rbp - %ld]\n", var->adresse + 8 - field->adresse);
+                        fprintf(fp, "    movsxd  rax, eax\n");
+                    }
                     break;
                 }
                 field = field->next;
@@ -414,6 +437,11 @@ static void emit_expr(Node *expr, struct definition_info *func, FILE *fp) {
         }
         break;
     }
+
+    case NODE_ListExp:
+        if (expr->firstChild)
+            emit_expr(expr->firstChild, func, fp);
+        break;
 
     default:
         fprintf(fp, "    xor     rax, rax  ; expr label=%d non supportée\n", expr->label);
@@ -459,10 +487,17 @@ static void emit_instr(Node *node, struct definition_info *func, FILE *fp) {
                     struct variable_info *field = var->type_def->liste_champs;
                     while (field) {
                         if (strcmp(field->identifiant, field_node->text) == 0) {
-                            if (var->container == NULL)
-                                fprintf(fp, "    mov     [%s + %ld], eax\n", var_node->text, field->adresse);
-                            else
-                                fprintf(fp, "    mov     [rbp - %ld], eax\n", var->adresse + 8 - field->adresse);
+                            if (field->type_nature == CHAR) {
+                                if (var->container == NULL)
+                                    fprintf(fp, "    mov     byte [%s + %ld], al\n", var_node->text, field->adresse);
+                                else
+                                    fprintf(fp, "    mov     byte [rbp - %ld], al\n", var->adresse + 8 - field->adresse);
+                            } else {
+                                if (var->container == NULL)
+                                    fprintf(fp, "    mov     dword [%s + %ld], eax\n", var_node->text, field->adresse);
+                                else
+                                    fprintf(fp, "    mov     dword [rbp - %ld], eax\n", var->adresse + 8 - field->adresse);
+                            }
                             break;
                         }
                         field = field->next;
@@ -574,10 +609,14 @@ static void emit_function(Node *funcNode, FILE *fp) {
     int stack_size = func_def ? func_def->total_size : 0;
     if (stack_size % 16 != 0) stack_size = (stack_size / 16 + 1) * 16;
 
-    fprintf(fp, "\n; ----- %s -----\n%s:\n", fname, fname);
-    fprintf(fp, "    push    rbp\n");
-    fprintf(fp, "    mov     rbp, rsp\n");
-    if (stack_size > 0) fprintf(fp, "    sub     rsp, %d\n", stack_size);
+    if (strcmp(fname, "main") == 0) 
+        fprintf(fp, "\nmain:\n");
+    else {
+        fprintf(fp, "\n; ----- %s -----\n%s:\n", fname, fname);
+        fprintf(fp, "    push    rbp\n");
+        fprintf(fp, "    mov     rbp, rsp\n");
+        if (stack_size > 0) fprintf(fp, "    sub     rsp, %d\n", stack_size);
+    }
 
     Node *suite = corps ? corps->firstChild : NULL;
     if (suite && suite->label == NODE_DeclVars) suite = suite->nextSibling;
@@ -601,7 +640,7 @@ void parcours_instruction(Node *root, struct table_symbole *gtable, FILE *fp) {
     if (!root || !gtable || !fp) return;
 
     fprintf(fp, "\nsection .text\n");
-    fprintf(fp, "global _start\n\n");
+    fprintf(fp, "global main\n\n");
 
     emit_builtin_io(fp);
 
@@ -617,12 +656,4 @@ void parcours_instruction(Node *root, struct table_symbole *gtable, FILE *fp) {
         }
         current = current->nextSibling;
     }
-
-    fprintf(fp,
-        "\n_start:\n"
-        "    call    main\n"
-        "    mov     rdi, rax\n"
-        "    mov     rax, 60\n"
-        "    syscall\n"
-    );
 }

@@ -4,10 +4,15 @@ struct Point {
     int y;
 };
 
+
 struct Point p;
 
 int main(void) {
+    char c ;
     p.x = 10;
     p.y = 20;
+    c = 'c';
+    p.x = getchar();
+    putint(p.x);
     return 0;
 }

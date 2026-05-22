@@ -1,4 +1,4 @@
-EXEC = tpcc
+EXEC = tpcas
 
 SRC_DIR = src/
 INC_DIR = inc/
@@ -18,9 +18,9 @@ YACC_O = tpcas.tab.o
 LEX_O = tpcas.yy.o
 COMPILER_O = compiler.o
 INSTR_O = instruction.o
-ASSEMBLER_EXEC = _anonymous
-ASSEMBLER_SRC = _anonymous.asm
-ASSEMBLER_OBJ = _anonymous.o
+ASSEMBLER_EXEC = ../test/good/gen-code-types
+ASSEMBLER_SRC = ../test/good/gen-code-types.asm
+ASSEMBLER_OBJ = ../test/good/gen-code-types.o
 
 CC = gcc
 CFLAGS = -Wall -Wextra -I$(INC_DIR) -I$(COMPILER_INC)
@@ -62,7 +62,7 @@ $(ASSEMBLER_OBJ): $(ASSEMBLER_SRC)
 $(ASSEMBLER_EXEC): $(ASSEMBLER_OBJ)
 	gcc -no-pie -o $(ASSEMBLER_EXEC) $(ASSEMBLER_OBJ)  
 clean:
-	rm -f *.o $(EXEC) $(SRC_DIR)tpcas.tab.c $(SRC_DIR)tpcas.yy.c $(INC_DIR)tpcas.tab.h
+	rm -f *.o $(EXEC) $(SRC_DIR)tpcas.tab.c $(SRC_DIR)tpcas.yy.c $(INC_DIR)tpcas.tab.h *.dot tree.pdf _anonymous*
 
 mrproper: clean
-	rm -f $(EXEC) *.asm
+	rm -f $(EXEC) *.asm 
