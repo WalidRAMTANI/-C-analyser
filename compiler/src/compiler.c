@@ -246,8 +246,9 @@ void fill_struct_definition(Node *structNode) {
                               : typeNode->nextSibling;
       while (declarators && declarators->label == NODE_IDENT) {
         if (is_in_variable_list(declarators->text, q_def->liste_champs)) {
-          printf("Error: Field %s already exists in struct %s.\n",
+          fprintf(stderr, "Error: Field %s already exists in struct %s.\n",
                  declarators->text, q_def->identifiant);
+          semantic_error = 1;
         } else {
           struct variable_info *new_field =
               create_field_info(declarators, type_str, &local_offset, q_def);
@@ -333,8 +334,9 @@ void fill_function_definition(Node *funcNode) {
     }
 
     if (is_in_variable_list(p_ident->text, q_def->liste_champs)) {
-      printf("Error: Parameter %s already exists in function %s.\n",
+      fprintf(stderr, "Error: Parameter %s already exists in function %s.\n",
              p_ident->text, q_def->identifiant);
+      semantic_error = 1;
     } else {
       struct variable_info *param =
           create_field_info(p_ident, p_type, &param_offset, q_def);
@@ -696,10 +698,31 @@ static void check_node(Node *node, struct definition_info *func,
   case NODE_CALL_FUNCTION:
     /* Premier enfant = nom de la fonction (NODE_IDENT), second = Arguments */
     if (node->firstChild && node->firstChild->label == NODE_IDENT) {
-      if (!find_in_table_symbole(node->firstChild->text, table, tbl_size)) {
+      struct definition_info *called = find_in_table_symbole(node->firstChild->text, table, tbl_size);
+      if (!called) {
         fprintf(stderr, "Error line %d: undeclared function '%s'\n",
                 node->firstChild->lineno, node->firstChild->text);
         semantic_error = 1;
+      } else if (called->kind == D_FUNC) {
+        /* Compter le nombre d'arguments attendus */
+        int expected = 0;
+        struct variable_info *pp = called->liste_champs;
+        while (pp) { expected++; pp = pp->next; }
+        /* Compter le nombre d'arguments effectifs */
+        int actual = 0;
+        Node *arg_node = node->firstChild->nextSibling;
+        if (arg_node && arg_node->label == NODE_Arguments && arg_node->firstChild) {
+          Node *list = arg_node->firstChild;
+          if (list->label == NODE_ListExp) {
+            Node *a = list->firstChild;
+            while (a) { actual++; a = a->nextSibling; }
+          }
+        }
+        if (actual != expected) {
+          fprintf(stderr, "Error line %d: function '%s' expects %d arguments, got %d\n",
+                  node->firstChild->lineno, node->firstChild->text, expected, actual);
+          semantic_error = 1;
+        }
       }
     }
     /* Vérifier les arguments (on saute le nom de la fonction) */
@@ -720,6 +743,26 @@ static void check_node(Node *node, struct definition_info *func,
     /* Déclarations de variables : on ne les vérifie pas ici, elles définissent
        des variables */
     break;
+
+  case NODE_RETURN:
+    /* Vérifier la compatibilité du type de retour */
+    if (func) {
+      if (node->firstChild) {
+        check_node(node->firstChild, func, table, tbl_size);
+        enum type_nature rtype = get_expr_type(node->firstChild, func, table, tbl_size, NULL);
+        if (func->return_type == T_CHAR && rtype == INT) {
+          fprintf(stderr, "Warning line %d: returning 'int' from function declared to return 'char'\n",
+                  node->lineno);
+        }
+        if (func->return_type == T_VOID) {
+          fprintf(stderr, "Error line %d: 'return' with a value in void function '%s'\n",
+                  node->lineno, func->identifiant);
+          semantic_error = 1;
+        }
+      }
+    }
+    break;
+
   case NODE_ASSIGN:
     {
       Node *lvalue = node->firstChild;
@@ -731,6 +774,17 @@ static void check_node(Node *node, struct definition_info *func,
         enum type_nature rtype = get_expr_type(rvalue, func, table, tbl_size, NULL);
         if (ltype == CHAR && rtype == INT) {
           fprintf(stderr, "Warning line %d: assigning 'int' to 'char' variable\n", node->lineno);
+        }
+        /* Vérifier void en expression (partie droite) */
+        if (rvalue->label == NODE_CALL_FUNCTION && rvalue->firstChild &&
+            rvalue->firstChild->label == NODE_IDENT) {
+          struct definition_info *rdef = find_in_table_symbole(
+              rvalue->firstChild->text, table, tbl_size);
+          if (rdef && rdef->kind == D_FUNC && rdef->return_type == T_VOID) {
+            fprintf(stderr, "Error line %d: void function '%s' used in expression\n",
+                    rvalue->firstChild->lineno, rvalue->firstChild->text);
+            semantic_error = 1;
+          }
         }
       }
     }
@@ -832,9 +886,20 @@ static enum type_nature get_expr_type(Node *expr, struct definition_info *func,
 }
 
 
+
 /* Point d'entrée : parcourir toutes les fonctions et vérifier les déclarations */
 void check_all_declarations(Node *root, struct table_symbole *table, int tbl_size) {
   if (!root) return;
+
+  /* Vérifier que main existe et retourne int */
+  struct definition_info *main_def = find_in_table_symbole("main", table, tbl_size);
+  if (!main_def || main_def->kind != D_FUNC) {
+    fprintf(stderr, "Error: program has no 'main' function\n");
+    semantic_error = 1;
+  } else if (main_def->return_type != T_INT) {
+    fprintf(stderr, "Error: 'main' must return int\n");
+    semantic_error = 1;
+  }
 
   Node *current = root->firstChild;
   while (current) {

@@ -1,0 +1,7 @@
+/* Warning : affectation int vers char */
+int main(void) {
+    char c;
+    c = 42;
+    putchar(c);
+    return 0;
+}

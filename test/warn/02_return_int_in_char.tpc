@@ -1,0 +1,11 @@
+/* Warning : return int dans une fonction char */
+char getA(void) {
+    return 65;
+}
+
+int main(void) {
+    char c;
+    c = getA();
+    putchar(c);
+    return 0;
+}

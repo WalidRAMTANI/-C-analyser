@@ -54,7 +54,7 @@
 
 [(){};,=!]      { return yytext[0]; }
 
-.               { }
+.               { fprintf(stderr, "%d: lexical error near '%s'\n", yylineno, yytext); exit(1); }
 <<EOF>> {
     return 0;
 }

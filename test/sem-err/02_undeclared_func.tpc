@@ -1,0 +1,6 @@
+/* Erreur sémantique : fonction foo non déclarée */
+int main(void) {
+    int x;
+    x = foo(3);
+    return x;
+}

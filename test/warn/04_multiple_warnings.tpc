@@ -1,0 +1,14 @@
+/* Warning : multiples warnings int vers char */
+char first(void) {
+    return 97;
+}
+
+int main(void) {
+    char a;
+    char b;
+    a = 65;
+    b = 66;
+    putchar(a);
+    putchar(b);
+    return 0;
+}

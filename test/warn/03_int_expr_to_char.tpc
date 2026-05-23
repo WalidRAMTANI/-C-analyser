@@ -1,0 +1,9 @@
+/* Warning : affectation int vers char (expression calculée) */
+int main(void) {
+    char c;
+    int x;
+    x = 97;
+    c = x + 1;
+    putchar(c);
+    return 0;
+}
